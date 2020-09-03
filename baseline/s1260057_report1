@@ -1,0 +1,31 @@
+Report #1
+                                                                                       Fri, August28, 2020 
+                                                                                       s1260057 Reon Namatame
+                                                                                       
+Title: Automatic Speaker Verification Spoofing and Countermeatures Challenge Evaluation
+
+Dataset:
+ASVspoof2019
+
+[Details about dataset]
+    # of speakers = Male 8, Female 12 for both of training and developing set
+    # of training set = 25,380(genuine 2,580 spoof 22,800)
+    # of development set = 24,986(genuine 2,548 spoof 22,296)
+    
+[Details about speech]
+    The duration of speech = 1~2sec.
+    Sampling freq = 16kHz
+    Bit depth = 16bits
+    
+Last week:
+1. Implementation of LFCC from scratch
+2. Studying of how CQCC work, what is different from MFCC, LFCC
+
+This week:
+1. Take a look at dataset format, protocol files
+2. Make a class of ASVspoofDataset(derived from torch.utils.data.Dataset)
+
+Next week:
+1. Make a class for pre-processing .flac files(Do I have to format length of speech?)
+2. Calculate EER of LFCC-GMM model
+(3. Experiment on hyperparameter of LFCC and GMM)
