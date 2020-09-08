@@ -28,7 +28,7 @@ class LFCC(object):
     def get_sampling_rate(self):
         return self.sr
     
-    def extract_feature(self, p=0.97, nfft=512, nchannels=20, nceps=12):
+    def extract_feature(self, p=0.97, nfft=512, nchannels=20, nceps=20, delta=False):
         
         # define a convolute preEmphasis filter
         self.waveform = self._preEmphasis(self.waveform, p)
@@ -77,9 +77,9 @@ class LFCC(object):
             plt.plot(np.arange(0, self._nfft//2) * df, filterbank[c])
         plt.show()
         """
-        eps = 0.01
+        eps = 2.2204e-16
         # apply linearfilterbanks for each vector, then sum all and take log
-        linear_spec = np.log10(np.dot(spec, filterbank.T))
+        linear_spec = np.log10(np.dot(spec, filterbank.T)+eps)
         ###print("linear_spec:", linear_spec.shape)
         
         # obtain a cepstrum by applying discrete cosine transform to log-linear spectrum
@@ -87,9 +87,17 @@ class LFCC(object):
         
         # cepstrum = (n-dimensional feature, shift), nceps is the number of features to use
         lfccs = cepstrum[:nceps]
-
-        return lfccs
-
+        
+        if delta == False:
+            return lffcs
+        
+        delta = self._delta(lfccs)
+        double_delta = self._delta(delta)
+        
+        combined = np.vstack((lfccs, delta, double_delta))
+        
+        return combined
+    
     #pre-emphasis filter
     def _preEmphasis(self, signal, p):
         #signal := voice_signal, p := coefficient
@@ -121,7 +129,7 @@ class LFCC(object):
         X = np.array([]) # X: spectrum will have to be (shift, windowlen)
         for m in range(shift):
             start = step * m
-            x = np.fft.fft(wave[start:start+windowlen]*window, norm='ortho')[:self.nfft//2]
+            x = np.fft.fft(wave[start:start+windowlen]*window, norm=None)[:self.nfft//2]
             if m == 0:
                 X = np.hstack((X, x))
             else:
@@ -135,7 +143,7 @@ class LFCC(object):
             """
         #print("X:", X.shape)
         # return power-spectrum
-        return np.abs(X)**2/self.nfft
+        return np.abs(X)**2#/self.nfft
     
     #generate linearfilterbank
     def _linearFilterBank(self, nchannels=40):
@@ -162,6 +170,20 @@ class LFCC(object):
     def _dct(self, mspec):
         return realtransforms.dct(mspec, type=2, norm='ortho', axis=-1)
     
+    #delta-LFCC, double-delta-LFCC
+    def _delta(self, x):
+        #expect shape x = (nceps, frame_size)
+        delta = np.zeros(x.shape)
+        for t in range(delta.shape[1]):
+            index_t_minus_one, index_t_plus_one = t-1, t+1
+            if index_t_minus_one < 0:
+                index_t_minus_one = 0
+            if index_t_plus_one >= delta.shape[1]:
+                index_t_plus_one = delta.shape[1]-1
+            
+            delta[:,t] = (x[:, index_t_plus_one] - x[:, index_t_minus_one])
+        return delta
+
 #end of class LFCC
 
 if __name__ == "__main__":
